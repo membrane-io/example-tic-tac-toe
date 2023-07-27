@@ -1,0 +1,58 @@
+{
+  "schema": {
+    "types": [
+      {
+        "name": "Root",
+        "description": "A simple tic-tac-toe game.",
+        "actions": [
+          {
+            "name": "endpoint",
+            "description": "",
+            "type": "String",
+            "params": [
+              {
+                "name": "method",
+                "type": "String"
+              },
+              {
+                "name": "body",
+                "type": "String"
+              },
+              {
+                "name": "path",
+                "type": "String"
+              },
+              {
+                "name": "query",
+                "type": "String"
+              },
+              {
+                "name": "headers",
+                "type": "String"
+              }
+            ],
+            "hints": {
+              "hidden": true
+            }
+          },
+          {
+            "name": "configure",
+            "type": "Void"
+          },
+          {
+            "name": "move",
+            "type": "Void",
+            "params": [
+              {
+                "name": "cell",
+                "type": "Int"
+              }
+            ]
+          }
+        ],
+        "fields": [],
+        "events": []
+      }
+    ]
+  }
+}
