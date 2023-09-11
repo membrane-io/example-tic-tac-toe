@@ -5,26 +5,29 @@ import { nodes, root, state } from "membrane";
 
 state.game = state.game ?? {};
 
-type GameSymbol = "X" | "O" | "";
-type GameBoard = GameSymbol[][];
+type Player = "X" | "O";
+type Cell = Player | "";
+type Board = Cell[][];
 
 interface GameState {
-  board: GameBoard;
-  turn: GameSymbol;
-  winner: GameSymbol | null;
+  board: Board;
+  turn: Player;
+  winner: Player | null;
   over: Boolean;
 }
 
 export const Root = {
-  configure: () => {
-    const board: GameBoard = Array.from({ length: 3 }, () => Array.from({ length: 3 }, () => ""));
-    const turn: GameSymbol = "X";
-    let winner: GameSymbol | null = null;
+  reset: () => {
+    const board: Board = Array.from({ length: 3 }, () =>
+      Array.from({ length: 3 }, () => "")
+    );
+    const turn: Player = "X";
+    let winner: Player | null = null;
 
     state.game = { board, turn, winner };
   },
 
-  move: ({ args: { cell } }) => {
+  move: ({ cell }) => {
     const game = state.game;
     const move = Number(cell);
     if (
@@ -33,7 +36,7 @@ export const Root = {
       move > 9 ||
       game.board[Math.floor((move - 1) / 3)][(move - 1) % 3] !== ""
     ) {
-      return JSON.stringify({ status: 400, body: "Invalid move" });
+      throw new Error("Invalid move");
     }
     // Update the game board with the requested move
     game.board[Math.floor((move - 1) / 3)][(move - 1) % 3] = game.turn;
@@ -41,16 +44,16 @@ export const Root = {
       game.winner = game.turn;
     } else if (checkTie(game.board)) {
       game.over = true;
-      return JSON.stringify({ status: 303, headers: { location: "/" } });
+      return;
     }
     // Update the turn
     game.turn = game.turn === "X" ? "O" : "X";
   },
-  
-  endpoint: async ({ args: { path, method } }) => {
+
+  endpoint: async ({ path, method }) => {
     // If the path is "/restart", reset the game state and redirect to the root path
     if (path === "/restart") {
-      await root.configure();
+      await root.reset();
       return JSON.stringify({ status: 303, headers: { location: "/" } });
     }
     // Parse the requested cell and get the current game state
@@ -62,11 +65,11 @@ export const Root = {
     }
     // If the game board is not set up, return an error message
     if (!game.board) {
-      return JSON.stringify({ status: 404, body: "Run :configure action" });
+      return JSON.stringify({ status: 404, body: "Invoke the :reset action" });
     }
     // check if the requested move is valid
     if (method === "POST") {
-      await root.move(cell);
+      await root.move({ cell });
       return JSON.stringify({ status: 303, headers: { location: "/" } });
     } else if (method === "GET") {
       // If the request method is GET, return the current game state as HTML
@@ -78,7 +81,7 @@ export const Root = {
 };
 
 // Check for a tie in the given game board
-function checkTie(board: GameBoard): boolean {
+function checkTie(board: Board): boolean {
   for (let row = 0; row < board.length; row++) {
     for (let col = 0; col < board[0].length; col++) {
       // If any cell is empty, the game is not a tie
@@ -90,24 +93,40 @@ function checkTie(board: GameBoard): boolean {
   return true;
 }
 
-function checkWinner(board: GameBoard, player: GameSymbol): number[] | null {
+function checkWinner(board: Board, player: Player): number[] | null {
   // Check rows
   for (let i = 0; i < board.length; i++) {
-    if (board[i][0] === player && board[i][1] === player && board[i][2] === player) {
+    if (
+      board[i][0] === player &&
+      board[i][1] === player &&
+      board[i][2] === player
+    ) {
       return [i * 3 + 1, i * 3 + 2, i * 3 + 3];
     }
   }
   // Check columns
   for (let i = 0; i < board[0].length; i++) {
-    if (board[0][i] === player && board[1][i] === player && board[2][i] === player) {
+    if (
+      board[0][i] === player &&
+      board[1][i] === player &&
+      board[2][i] === player
+    ) {
       return [i + 1, i + 4, i + 7];
     }
   }
   // Check diagonals
-  if (board[0][0] === player && board[1][1] === player && board[2][2] === player) {
+  if (
+    board[0][0] === player &&
+    board[1][1] === player &&
+    board[2][2] === player
+  ) {
     return [1, 5, 9];
   }
-  if (board[0][2] === player && board[1][1] === player && board[2][0] === player) {
+  if (
+    board[0][2] === player &&
+    board[1][1] === player &&
+    board[2][0] === player
+  ) {
     return [3, 5, 7];
   }
   // No winner
@@ -123,17 +142,22 @@ function html(game: GameState) {
           // Calculate the number of the cell based on it's position
           const num = i * 3 + j + 1;
           // Determine whether the button should be disabled based on game state
-          const disabled = cell === "X" || cell === "O" || game.winner || game.over;
+          const disabled =
+            cell === "X" || cell === "O" || game.winner || game.over;
           let className = "";
           if (game.winner) {
-            const isWinner = checkWinner(game.board, game.winner)!.includes(num);
+            const isWinner = checkWinner(game.board, game.winner)!.includes(
+              num
+            );
             className = `${isWinner ? "winner" : ""}`;
           }
           // Return the HTML for the cell as a string
           return `
             <td>
               <form action="/${num}" method="POST">
-                <button class="${className} ${disabled ? "disabled" : ""}" ${ disabled ? "disabled" : ""}>
+                <button class="${className} ${disabled ? "disabled" : ""}" ${
+            disabled ? "disabled" : ""
+          }>
                   <span>${cell || "&nbsp;"}</span>
                 </button>	
               </form>
