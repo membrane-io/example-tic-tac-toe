@@ -7,7 +7,8 @@
         "actions": [
           {
             "name": "reset",
-            "type": "Void"
+            "type": "Void",
+            "description": "Resets the tic-tac-toe game."
           },
           {
             "name": "move",
@@ -15,9 +16,11 @@
             "params": [
               {
                 "name": "cell",
-                "type": "Int"
+                "type": "Int",
+                "description": "The cell where the move is to be made."
               }
-            ]
+            ],
+            "description": "Makes a move in the tic-tac-toe game."
           }
         ]
       }
